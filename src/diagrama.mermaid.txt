@@ -1,0 +1,30 @@
+https://mermaid.live/
+---
+config:
+  layout: elk
+  theme: neutral
+---
+classDiagram
+direction BT
+    class users {
+	    objectid _id
+        string nome
+        string senha
+    }
+
+    class notes {
+	    objectid _id
+	    objectid user
+	    objectid status
+	    string titulo
+	    string texto
+        isodate createdAt
+    }
+
+    class status {
+	    objectid _id
+	    string nome
+    }
+
+    users "1" <--> "n" notes
+    status "1" <--> "n" notes

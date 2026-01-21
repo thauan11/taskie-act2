@@ -1,28 +1,8 @@
 "use client";
 import { createContext, type ReactNode, useCallback, useEffect, useState } from "react";
+import type { Note } from "@/types";
 
 
-
-// tipagem
-interface Note {
-  id: string;
-  user: User;
-  status: Status;
-  titulo: string;
-  texto: string;
-  createdAt: string;
-}
-
-interface User {
-  id: string;
-  nome: string;
-  senha: string;
-}
-
-interface Status {
-  id: string;
-  nome: string;
-}
 
 // hooks
 const useNotes = () => {
@@ -39,6 +19,12 @@ const useNotes = () => {
     setNotes(updatedNotes);
   };
 
+  const updateNote = (note: Note) => {
+    const updatedNotes = notes.map((n) => (n.id === note.id ? note : n));
+    localStorage.setItem("notes", JSON.stringify(updatedNotes));
+    setNotes(updatedNotes);
+  };
+
   useEffect(() => {
     getNotes();
   }, [getNotes]);
@@ -46,6 +32,7 @@ const useNotes = () => {
   return {
     notes,
     addNote,
+    updateNote,
   };
 }
 
@@ -53,11 +40,13 @@ const useNotes = () => {
 interface NotesContextType {
   notes: Note[];
   addNote: (note: Note) => void;
+  updateNote: (note: Note) => void;
 }
 
 export const NotesContext = createContext<NotesContextType>({
   notes: [],
   addNote: () => {},
+  updateNote: () => {},
 });
 
 export const NotesProvider = ({ children }: { children: ReactNode }) => {

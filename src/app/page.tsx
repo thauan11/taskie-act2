@@ -1,11 +1,11 @@
 "use client";
 import { useState, useContext, useRef } from "react";
-import { Alert, Box, Checkbox, Collapse, Container, FormControl, FormLabel, Grid, TextField } from "@mui/material";
+import { Alert, Box, Button, Checkbox, Collapse, Container, FormControl, FormLabel, Grid, TextField } from "@mui/material";
 import type { Note, Status } from "@/types";
 import { NotesContext } from "@/contexts/notesContext";
 import BasicDatePicker from "@/components/DatePicker";
 import type { Dayjs } from 'dayjs';
-import { CheckCircleOutline, CloseOutlined } from "@mui/icons-material";
+import { CheckCircleOutline, CheckOutlined, CloseOutlined } from "@mui/icons-material";
 
 
 
@@ -59,7 +59,6 @@ export default function Home() {
       ...foundNote,
       status: foundNote.status.id === '1' ? status[0][1] : status[0][0],
       updatedAt: new Date().toISOString(),
-      finishAt: new Date().toISOString(),
     };
     updateNote(updatedNoteObj);
   }
@@ -67,10 +66,12 @@ export default function Home() {
   // helpers
   const getSplitDate = (dateString: string) => {
     const date = new Date(dateString);
-    const dateWithoutTime = new Date( date.getFullYear(), date.getMonth(), date.getDate());
-    // let dateWithoutYear = dateWithoutTime.toLocaleDateString();
-    // dateWithoutYear = dateWithoutYear.split('/').slice(0, -1).join('/');
-    return dateWithoutTime.toLocaleDateString();
+    const formatedMonth = date.toLocaleString('pt-BR', { month: 'long' }).slice(0, 3);
+    const formatedDay = date.getDate();
+    const formatedYear = date.getFullYear().toString().slice(-2);
+    const currentYear = new Date().getFullYear();
+    if (date.getFullYear() === currentYear) return `${formatedDay}/${formatedMonth}`;
+    return `${formatedDay}/${formatedMonth}/${formatedYear}`;
   }
 
   const isToday = (dateString: string) => {
@@ -99,22 +100,44 @@ export default function Home() {
   const isNextWeek = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
-    const nextWeek = new Date();
-    nextWeek.setDate(today.getDate() + 7);
-    if (date > today && date <= nextWeek) {
-      return true;
-    }
-    return false;
+    today.setDate(today.getDate() + 7);
+    today.setHours(0, 0, 0, 0);
+
+    const firstDayOfWeek = new Date(today);
+    firstDayOfWeek.setDate(today.getDate() - today.getDay());
+
+    const lastDayOfWeek = new Date(today);
+    lastDayOfWeek.setDate(today.getDate() + (6 - today.getDay()));
+    lastDayOfWeek.setHours(23, 59, 59, 999);
+
+    date.setHours(0, 0, 0, 0);
+
+    return date >= firstDayOfWeek && date <= lastDayOfWeek;
   }
+
+  const isThisWeek = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const firstDayOfWeek = new Date(today);
+    firstDayOfWeek.setDate(today.getDate() - today.getDay());
+
+    const lastDayOfWeek = new Date(today);
+    lastDayOfWeek.setDate(today.getDate() + (6 - today.getDay()));
+    lastDayOfWeek.setHours(23, 59, 59, 999);
+
+    date.setHours(0, 0, 0, 0);
+
+    return date >= firstDayOfWeek && date <= lastDayOfWeek;
+  };
 
   const isOverdue = (dateString: string) => {
     const date = new Date(dateString);
     const onlyDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     const today = new Date();
     const onlyToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    if (onlyDate < onlyToday) {
-      return true;
-    }
+    if (onlyDate < onlyToday) return true;
     return false;
   }
 
@@ -123,10 +146,20 @@ export default function Home() {
     const overdueNotes = notes.filter((note) => isOverdue(note.finishAt));
     const todayNotes = notes.filter((note) => isToday(note.finishAt));
     const tomorrowNotes = notes.filter((note) => isTomorrow(note.finishAt));
+    const thisWeekNotes = notes.filter((note) => {
+      return !isOverdue(note.finishAt) && !isToday(note.finishAt) && !isTomorrow(note.finishAt) && isThisWeek(note.finishAt);
+    });
     const nextWeekNotes = notes.filter((note) => isNextWeek(note.finishAt));
     const otherNotes = notes.filter((note) => {
-      return !isOverdue(note.finishAt) && !isToday(note.finishAt) && !isTomorrow(note.finishAt) && !isNextWeek(note.finishAt);
+      return !isOverdue(note.finishAt) && !isToday(note.finishAt) && !isTomorrow(note.finishAt) && !isNextWeek(note.finishAt) && !isThisWeek(note.finishAt);
     });
+
+    overdueNotes.sort((a, b) => new Date(a.finishAt).getTime() - new Date(b.finishAt).getTime());
+    todayNotes.sort((a, b) => new Date(a.finishAt).getTime() - new Date(b.finishAt).getTime());
+    tomorrowNotes.sort((a, b) => new Date(a.finishAt).getTime() - new Date(b.finishAt).getTime());
+    thisWeekNotes.sort((a, b) => new Date(a.finishAt).getTime() - new Date(b.finishAt).getTime());
+    nextWeekNotes.sort((a, b) => new Date(a.finishAt).getTime() - new Date(b.finishAt).getTime());
+    otherNotes.sort((a, b) => new Date(a.finishAt).getTime() - new Date(b.finishAt).getTime());
 
     const renderNote = (note: Note, color?: string) => (
       note.status.id === '1' && (
@@ -164,13 +197,13 @@ export default function Home() {
                 gap: '1rem',
               }}
             >
-              <Box sx={{ display: 'grid', placeItems: 'center' }}>
+              {/* <Box sx={{ display: 'grid', placeItems: 'center' }}>
                 <p>Created</p>
                 <p style={{ fontSize: '0.65rem' }}>{getSplitDate(note.createdAt)}</p>
-              </Box>
+              </Box> */}
 
               <Box sx={{ display: 'grid', placeItems: 'center' }}>
-                <p>Finish</p>
+                {/* <p>End</p> */}
                 <p style={{ fontSize: '0.65rem', color: color }}>{getSplitDate(note.finishAt)}</p>
               </Box>
             </Box>
@@ -180,7 +213,7 @@ export default function Home() {
     );
 
     if (notes.filter(note => note.status.id === '1').length === 0) return null;
-
+    
     return (
       <>
         {overdueNotes.length >= 1 && (
@@ -199,6 +232,12 @@ export default function Home() {
           <Box mb={2}>
             <strong>Tomorrow</strong>
             {tomorrowNotes.map(note => renderNote(note, 'orange'))}
+          </Box>
+        )}
+        {thisWeekNotes.length >= 1 && (
+          <Box mb={2}>
+            <strong>This Week</strong>
+            {thisWeekNotes.map(note => renderNote(note, 'green'))}
           </Box>
         )}
         {nextWeekNotes.length >= 1 && (
@@ -284,21 +323,45 @@ export default function Home() {
   }
 
   return (
-    <Container maxWidth="sm" sx={{ height: "calc(100dvh - 32px)", paddingBottom: "16px" }}>
+    <Container maxWidth="sm" sx={{ maxHeight: "100dvh", overflowY: "hidden" }}>
       <Box my={4} sx={{ height: "100%", width: "100%", display: 'grid', placeItems: 'center' }}>
-        <Grid
-          container
-          direction="column"
+        <Collapse
+          in={alertOpen}
           sx={{
-            height: "100%",
-            display: 'grid',
-            gridTemplateRows: "calc(100% - 80px) 80px",
-            justifyContent: "space-between",
+            width: '100%',
+            position: 'absolute',
+            left: 0,
+            top: -50,
+            zIndex: 1,
+            borderRadius: '4px',
           }}
         >
-          <Grid size={12} sx={{ overflowY: "auto" }}>
+          <Alert
+            icon={
+              alertSeverity === "success" ? (
+                <CheckCircleOutline fontSize="inherit" />
+              ) : (
+                <CloseOutlined fontSize="inherit" />
+              )
+            }
+            severity={alertSeverity}
+          >
+            {alertMessage}
+          </Alert>
+        </Collapse>
+
+        <Grid
+          container
+          sx={{ 
+            height: "100dvh",
+            width: "100%",
+            display: 'grid',
+            gridTemplateRows: 'calc(80% - 16px) 20%',
+            gap: "16px",
+          }}
+        >
+          <Grid size={12} sx={{ overflowY: "auto"}}>
             {renderActiveNotes()}
-            {/* {renderCompletedNotes()} */}
           </Grid>
 
           <Grid size={12} sx={{ position: "relative" }}>
@@ -346,30 +409,16 @@ export default function Home() {
                     onChange={setFinishAt}
                   />
                 </FormControl>
-              </Grid>
-              
-              <Collapse in={alertOpen}>
-                <Alert
-                  icon={
-                    alertSeverity === "success" ? (
-                      <CheckCircleOutline fontSize="inherit" />
-                    ) : (
-                      <CloseOutlined fontSize="inherit" />
-                    )
-                  }
-                  severity={alertSeverity}
-                  sx={{
-                    width: '100%',
-                    position: 'absolute',
-                    left: 0,
-                    top: -50,
-                    zIndex: 1,
-                    borderRadius: '4px',
-                  }}
+
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={() => handleAdd(newNote)}
+                  sx={{ mt: 1, width: '100%' }}
                 >
-                  {alertMessage}
-                </Alert>
-              </Collapse>
+                  <CheckOutlined />
+                </Button>
+              </Grid>
             </Grid>
           </Grid>
         </Grid>

@@ -390,6 +390,15 @@ export default function Home() {
                     onChange={(e) => setNewNote(e.target.value)}
                     sx={{
                       paddingTop: '8px',
+                      'label': {
+                        color: 'var(--foreground)',
+                      },
+                      'fieldset': {
+                        borderColor: 'var(--foreground)',
+                      },
+                      '.MuiInputBase-formControl:hover .MuiOutlinedInput-notchedOutline:hover': {
+                        borderColor: 'var(--foreground-transparent)',
+                      },
                       'label[data-shrink="false"]': {
                         transform: 'translate(14px, 24px) scale(1)',
                       },

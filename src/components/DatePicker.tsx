@@ -34,6 +34,15 @@ export default function BasicDatePicker({ label, color, value, onChange }: Basic
             '.css-113d811-MuiFormLabel-root-MuiInputLabel-root.Mui-focused': {
               color: demoColor(color || 'primary'),
             },
+            'label, input': {
+              color: 'var(--foreground)',
+            },
+            'fieldset': {
+              borderColor: 'var(--foreground)',
+            },
+            '.MuiInputBase-formControl:hover .MuiOutlinedInput-notchedOutline:hover': {
+              borderColor: 'var(--foreground-transparent)',
+            },
           }}
         />
       </DemoContainer>
